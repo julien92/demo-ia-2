@@ -1,88 +1,67 @@
 package com.example.orderapi;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-@SpringBootTest
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
 public class OrderServiceTest {
 
-  @Autowired
-  private OrderService orderService;
+    @InjectMocks
+    private OrderService orderService;
 
-  /**
-   * Tests pour la méthode getOrder() sans paramètre (compatibilité).
-   */
-  @Test
-  void testGetOrder_ReturnsPredefinedOrder() {
-    // Act
-    Order order = orderService.getOrder();
+    @Mock
+    private OrderRepository orderRepository;
 
-    // Assert
-    assertNotNull(order, "Order should not be null");
-    assertEquals(1L, order.getId(), "Order ID should be 1L");
-    assertEquals("client@email.com", order.getEmail(), "Email should match the predefined value");
-    assertEquals("Commande pour un superbe produit", order.getDescription(),
-        "Description should match the predefined value");
-  }
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  /**
-   * Tests pour la méthode getOrder(Long id) avec un id existant.
-   */
-  @Test
-  void testGetOrderById_ReturnsCorrectOrder() {
-    // Arrange - Créer une commande pour s'assurer qu'elle existe
-    orderService.getOrder(); // Initialise la commande avec ID 1L
+    @Test
+    public void testGetAllOrders() {
+        Order order1 = new Order(1L, "test1@example.com", "Description 1");
+        Order order2 = new Order(2L, "test2@example.com", "Description 2");
 
-    // Act
-    Order order = orderService.getOrder(1L);
+        when(orderRepository.findAll()).thenReturn(Arrays.asList(order1, order2));
 
-    // Assert
-    assertNotNull(order, "Order should not be null");
-    assertEquals(1L, order.getId(), "Order ID should be 1L");
-    assertEquals("client@email.com", order.getEmail(), "Email should match the expected value");
-    assertEquals("Commande pour un superbe produit", order.getDescription(),
-        "Description should match the expected value");
-  }
+        List<Order> orders = orderService.getAllOrders();
 
-  /**
-   * Tests pour la méthode getOrder(Long id) avec un id non existant.
-   */
-  @Test
-  void testGetOrderById_NonExistingId_ReturnsNull() {
-    // Act
-    Order order = orderService.getOrder(999L);
+        assertEquals(2, orders.size());
+        assertEquals("test1@example.com", orders.get(0).getEmail());
+    }
 
-    // Assert
-    assertNull(order, "Order should be null for non-existing ID");
-  }
+    @Test
+    public void testGetOrderById() {
+        Order order = new Order(1L, "test@example.com", "Test Description");
 
-  /**
-   * Tests for the createOrder method in the OrderService class.
-   * <p>
-   * Method being tested: public Order createOrder(Order orderRequest)
-   * <p>
-   * Purpose of the method: Creates a new Order object with dynamically assigned id while retaining
-   * the email and description values from the input object.
-   */
-  @Test
-  void testCreateOrder_ReturnsNewOrderWithProvidedDetails() {
-    // Arrange
-    Order orderRequest = new Order(null, "newclient@email.com", "New product order");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-    // Act
-    Order createdOrder = orderService.createOrder(orderRequest);
+        Optional<Order> result = orderService.getOrderById(1L);
 
-    // Assert
-    assertNotNull(createdOrder, "Created Order should not be null");
-    assertNotNull(createdOrder.getId(), "New Order ID should not be null");
-    assertEquals("newclient@email.com", createdOrder.getEmail(),
-        "Email should match the provided value");
-    assertEquals("New product order", createdOrder.getDescription(),
-        "Description should match the provided value");
-  }
+        assertTrue(result.isPresent());
+        assertEquals("test@example.com", result.get().getEmail());
+    }
+
+    @Test
+    public void testCreateOrder() {
+        Order orderToCreate = new Order(null, "new@example.com", "New Description");
+        Order createdOrder = new Order(1L, "new@example.com", "New Description");
+
+        when(orderRepository.save(orderToCreate)).thenReturn(createdOrder);
+
+        Order result = orderService.createOrder(orderToCreate);
+
+        assertEquals(1L, result.getId());
+        assertEquals("new@example.com", result.getEmail());
+    }
 }

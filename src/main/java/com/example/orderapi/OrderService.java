@@ -1,35 +1,27 @@
 package com.example.orderapi;
 
 import org.springframework.stereotype.Service;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrderService {
 
-  private final Map<Long, Order> orders = new HashMap<>();
+    private final OrderRepository orderRepository;
 
-  public Order getOrder(Long id) {
-    if (!orders.containsKey(id) && id == 1L) {
-      Order order = new Order(1L, "client@email.com", "Commande pour un superbe produit");
-      orders.put(1L, order);
+    public OrderService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
     }
-    return orders.get(id);
-  }
 
-  // Méthode de compatibilité pour les anciens appels
-  public Order getOrder() {
-    return getOrder(1L);
-  }
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
 
-  public Order createOrder(Order orderRequest) {
-    Long newId = System.currentTimeMillis();
-    Order order = new Order(
-        newId,
-        orderRequest.getEmail(),
-        orderRequest.getDescription()
-    );
-    orders.put(newId, order);
-    return order;
-  }
+    public Optional<Order> getOrderById(Long id) {
+        return orderRepository.findById(id);
+    }
+
+    public Order createOrder(Order order) {
+        return orderRepository.save(order);
+    }
 }
